@@ -2,6 +2,7 @@
 
 import path from 'path';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +24,7 @@ export default {
         new HtmlWebpackPlugin({
             template: 'index.html',
         }),
+        new MiniCssExtractPlugin(),
 
         // Add your plugins here
         // Learn more about plugins from https://webpack.js.org/configuration/plugins/
@@ -33,10 +35,10 @@ export default {
                 test: /\.(eot|svg|ttf|woff|woff2|png|jpg|gif)$/i,
                 type: 'asset',
             },
-            { test: /\.css$/, use: ['style-loader', 'css-loader', 'postcss-loader'] },
+            { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader'] },
             {
                 test: /\.scss$/,
-                use: ['style-loader', 'css-loader', 'sass-loader', 'postcss-loader'],
+                use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader', 'postcss-loader'],
             },
 
             // Add your rules for custom modules here
