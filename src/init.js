@@ -7,6 +7,14 @@ const validate = (state, inputVal) => {
 };
 
 const renderMessage = (state, container) => {
+  if (state.formState === 'valid') {
+    container.classList.remove('text-danger');
+    container.classList.add('text-success');
+  }
+  if (state.formState === 'invalid') {
+    container.classList.remove('text-success');
+    container.classList.add('text-danger');
+  }
   container.textContent = state.message;
 };
 
@@ -45,10 +53,10 @@ export default () => {
       .then(() => {
         state.usedRss.push(input.value);
         wathedState.formState = 'valid';
-        wathedState.message = '';
+        wathedState.message = 'RSS успешно загружен';
       }).catch((err) => {
-        wathedState.message = err.message;
         wathedState.formState = 'invalid';
+        wathedState.message = err.message;
       });
   });
 };
