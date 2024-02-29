@@ -1,8 +1,32 @@
 import * as yup from 'yup';
 import onChange from 'on-change';
+import i18next from 'i18next';
+
+yup.setLocale({
+  mixed: {
+    notOneOf: 'already_downloaded',
+  },
+  string: {
+    url: 'invalid_url',
+  }
+});
+
+i18next.init({
+  lng: 'ru',
+  debug: true,
+  resources: {
+    ru: {
+      translation: {
+        already_downloaded: 'RSS уже существует',
+        invalid_url: 'Ссылка должна быть валидным URL',
+        success: 'RSS успешно загружен',
+      }
+    }
+  }
+});
 
 const validate = (state, inputVal) => {
-  const schema = yup.string().required().url('Ссылка должна быть валидным URL').notOneOf(state.usedRss, 'RSS уже существует');
+  const schema = yup.string().required().url().notOneOf(state.usedRss);
   return schema.validate(inputVal);
 };
 
@@ -15,12 +39,14 @@ const renderMessage = (state, container) => {
     container.classList.remove('text-success');
     container.classList.add('text-danger');
   }
-  container.textContent = state.message;
+  container.textContent = i18next.t(state.message);
 };
 
 const renderInput = (state, input) => {
   if (state.formState === 'valid') {
     input.classList.remove('is-invalid');
+    input.value = '';
+    input.focus();
   }
   if (state.formState === 'invalid') {
     input.classList.add('is-invalid');
@@ -53,10 +79,11 @@ export default () => {
       .then(() => {
         state.usedRss.push(input.value);
         wathedState.formState = 'valid';
-        wathedState.message = 'RSS успешно загружен';
+        wathedState.message = 'success';
       }).catch((err) => {
         wathedState.formState = 'invalid';
         wathedState.message = err.message;
+        return false;
       });
   });
 };
