@@ -8,7 +8,7 @@ yup.setLocale({
   },
   string: {
     url: 'invalid_url',
-  }
+  },
 });
 
 i18next.init({
@@ -20,9 +20,9 @@ i18next.init({
         already_downloaded: 'RSS уже существует',
         invalid_url: 'Ссылка должна быть валидным URL',
         success: 'RSS успешно загружен',
-      }
-    }
-  }
+      },
+    },
+  },
 });
 
 const validate = (state, inputVal) => {
