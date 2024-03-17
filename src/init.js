@@ -17,7 +17,8 @@ yup.setLocale({
   },
 });
 
-i18next.init({
+const i18nextInstance = i18next.createInstance();
+i18nextInstance.init({
   lng: 'ru',
   debug: true,
   resources: {
@@ -58,16 +59,18 @@ const buildFeed = (feeds) => feeds
     return li;
   });
 
-const buildPosts = (posts) => posts
+const buildPosts = (wathedState) => wathedState.posts
   .map((post) => {
+    const visited = wathedState.uiState.visitedPostsId[post.id] === true;
+
     const li = document.createElement('li');
     li.classList = 'list-group-item d-flex justify-content-between align-items-start border-0 border-end-0';
 
     const a = document.createElement('a');
-    a.classList = 'fw-bold';
+    a.classList = visited ? 'fw-normal link-secondary' : 'fw-bold';
     a.href = post.link;
     a.dataset.id = post.id;
-    a.target = '_blank';
+    a.bsTarget = '_blank';
     a.rel = 'noopener noreferrer';
     a.textContent = post.title;
 
@@ -76,15 +79,15 @@ const buildPosts = (posts) => posts
     button.type = 'button';
     button.classList = 'btn btn-outline-primary btn-sm';
     button.dataset.id = post.id;
-    button.dataset.toggle = 'modal';
-    button.dataset.target = '#modal';
-    button.textContent = i18next.t('watch');
+    button.dataset.bsToggle = 'modal';
+    button.dataset.bsTarget = '#modal';
+    button.textContent = i18nextInstance.t('watch');
 
     li.append(a, button);
     return li;
   });
 
-const renderData = (state, container, title) => {
+const renderData = (wathedState, container, title) => {
   container.innerHTML = '';
   const ul = document.createElement('ul');
   ul.classList = 'list-group border-0 rounded-0';
@@ -97,11 +100,11 @@ const renderData = (state, container, title) => {
 
   const cardTitle = document.createElement('h2');
   cardTitle.classList = 'card-title h4';
-  cardTitle.textContent = i18next.t(`${title}_title`);
+  cardTitle.textContent = i18nextInstance.t(`${title}_title`);
 
   cardBody.append(cardTitle);
 
-  const data = title === 'feeds' ? buildFeed(state.feeds) : buildPosts(state.posts);
+  const data = title === 'feeds' ? buildFeed(wathedState.feeds) : buildPosts(wathedState);
   ul.append(...data);
   card.append(cardBody, ul);
   container.append(card);
@@ -116,7 +119,7 @@ const renderMessage = (state, container) => {
     container.classList.remove('text-success');
     container.classList.add('text-danger');
   }
-  container.textContent = i18next.t(state.message);
+  container.textContent = i18nextInstance.t(state.message);
 };
 
 const renderInput = (state, input, btn) => {
@@ -153,6 +156,25 @@ const updateFeeds = (wathedState) => {
   Promise.all(promises).then(() => setTimeout(updateFeeds, 5000, wathedState));
 };
 
+const form = document.querySelector('form');
+const input = form.elements.url;
+const submitButton = document.querySelector('[type="submit"]');
+const messageContainer = document.querySelector('.feedback');
+const feedContainer = document.querySelector('.feeds');
+const postsContainer = document.querySelector('.posts');
+const modalTitle = document.querySelector('.modal-title');
+const modalBody = document.querySelector('.modal-body');
+const modallink = document.querySelector('.modal-footer > a');
+
+const rendermodal = (wathedState) => {
+  const selectedPostId = wathedState.uiState.modalPostId;
+  const selectedPost = wathedState.posts.find((post) => post.id === selectedPostId);
+
+  modalBody.textContent = selectedPost.description;
+  modalTitle.textContent = selectedPost.title;
+  modallink.href = selectedPost.link;
+};
+
 export default () => {
   const state = {
     formState: 'filling',
@@ -160,15 +182,12 @@ export default () => {
     usedRss: [],
     feeds: [],
     posts: [],
+    uiState: {
+      visitedPostsId: {},
+      modalPostId: null,
+    },
     startChecking: false,
   };
-
-  const form = document.querySelector('form');
-  const input = form.elements.url;
-  const submitButton = document.querySelector('[type="submit"]');
-  const messageContainer = document.querySelector('.feedback');
-  const feedContainer = document.querySelector('.feeds');
-  const postsContainer = document.querySelector('.posts');
 
   const wathedState = onChange(state, (path) => {
     if (path === 'formState') {
@@ -180,11 +199,25 @@ export default () => {
     if (path === 'feeds') {
       renderData(state, feedContainer, 'feeds');
     }
-    if (path === 'posts') {
-      renderData(state, postsContainer, 'posts');
+    if (path === 'posts' || path.startsWith('uiState.visitedPostsId')) {
+      renderData(wathedState, postsContainer, 'posts');
     }
     if (path === 'startChecking') {
       setTimeout(updateFeeds, 5000, wathedState);
+    }
+    if (path === 'uiState.modalPostId') {
+      rendermodal(wathedState);
+    }
+  });
+
+  postsContainer.addEventListener('click', (e) => {
+    const { id } = e.target.dataset;
+    if (e.target.tagName === 'A') {
+      wathedState.uiState.visitedPostsId[id] = true;
+    }
+    if (e.target.tagName === 'BUTTON') {
+      wathedState.uiState.visitedPostsId[id] = true;
+      wathedState.uiState.modalPostId = id;
     }
   });
 

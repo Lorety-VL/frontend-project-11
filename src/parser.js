@@ -15,7 +15,7 @@ export default (xmlData, url) => {
     const title = item.querySelector('title').textContent;
     const description = item.querySelector('description').textContent;
     const pubDateStr = item.querySelector('pubDate').textContent;
-    const link = item.querySelector('link');
+    const link = item.querySelector('link').textContent;
     const pubDate = Date.parse(pubDateStr);
     return {
       id: postId, feedId: id, title, description, pubDate, link,
