@@ -135,6 +135,24 @@ const renderInput = (state, input, btn) => {
   }
 };
 
+const isUpdated = (updateTime, newUpdateTime) => updateTime < newUpdateTime;
+
+const getUpdatedPosts = (updateTime, updatedPosts) => updatedPosts
+  .filter((post) => isUpdated(updateTime, post.pubDate));
+
+const updateFeeds = (wathedState) => {
+  const promises = wathedState.feeds
+    .map((feed, id) => axios.get(routes.pathWithProxy(feed.url))
+      .then((response) => {
+        const { feed: newFeed, posts: newPosts } = parseHtml(response.data.contents, feed.url);
+        if (!isUpdated(feed.pubDate, newFeed.pubDate)) return;
+        wathedState.posts.unshift(...getUpdatedPosts(feed.pubDate, newPosts));
+        onChange.target(wathedState).feeds[id].pubDate = newFeed.pubDate;
+      })
+      .catch(() => null));
+  Promise.all(promises).then(() => setTimeout(updateFeeds, 5000, wathedState));
+};
+
 export default () => {
   const state = {
     formState: 'filling',
@@ -142,6 +160,7 @@ export default () => {
     usedRss: [],
     feeds: [],
     posts: [],
+    startChecking: false,
   };
 
   const form = document.querySelector('form');
@@ -164,6 +183,9 @@ export default () => {
     if (path === 'posts') {
       renderData(state, postsContainer, 'posts');
     }
+    if (path === 'startChecking') {
+      setTimeout(updateFeeds, 5000, wathedState);
+    }
   });
 
   form.addEventListener('submit', (e) => {
@@ -175,11 +197,12 @@ export default () => {
           .then((response) => {
             state.usedRss.push(input.value);
             try {
-              const { feed, posts } = parseHtml(response.data.contents);
-              wathedState.feeds.push(feed);
-              wathedState.posts.push(...posts);
+              const { feed, posts } = parseHtml(response.data.contents, input.value);
+              wathedState.feeds.unshift(feed);
+              wathedState.posts.unshift(...posts);
               wathedState.formState = 'valid';
               wathedState.message = 'success';
+              wathedState.startChecking = true;
             } catch (err) {
               wathedState.formState = 'invalid';
               wathedState.message = 'invalid_resource';
