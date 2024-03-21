@@ -1,6 +1,4 @@
-import { uniqueId } from 'lodash';
-
-export default (xmlData, url) => {
+export default (xmlData) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlData, 'text/xml');
 
@@ -8,17 +6,15 @@ export default (xmlData, url) => {
   if (error) {
     throw new Error(error);
   }
-  const id = uniqueId();
   const items = doc.querySelectorAll('item');
   const posts = [...items].map((item) => {
-    const postId = uniqueId();
     const title = item.querySelector('title').textContent;
     const description = item.querySelector('description').textContent;
     const pubDateStr = item.querySelector('pubDate').textContent;
     const link = item.querySelector('link').textContent;
     const pubDate = Date.parse(pubDateStr);
     return {
-      id: postId, feedId: id, title, description, pubDate, link,
+      title, description, pubDate, link,
     };
   });
 
@@ -27,7 +23,7 @@ export default (xmlData, url) => {
   const pubDateStr = doc.querySelector('pubDate').textContent;
   const pubDate = Date.parse(pubDateStr);
   const feed = {
-    title, description, pubDate, id, url,
+    title, description, pubDate,
   };
 
   return { feed, posts };
