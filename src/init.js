@@ -120,7 +120,7 @@ export default () => {
       wathedState.uiState.visitedPostsId.add(id);
     }
     if (e.target.tagName === 'BUTTON') {
-      state.uiState.visitedPostsId.add(id);
+      wathedState.uiState.visitedPostsId.add(id);
       wathedState.uiState.modalPostId = id;
     }
   });
