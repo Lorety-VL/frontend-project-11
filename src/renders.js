@@ -1,5 +1,3 @@
-import i18nextInstance from './locales/index.js';
-
 const rendermodal = (wathedState, modalBody, modalTitle, modallink) => {
   const selectedPostId = wathedState.uiState.modalPostId;
   const selectedPost = wathedState.posts.find((post) => post.id === selectedPostId);
@@ -26,7 +24,7 @@ const buildFeed = (feeds) => feeds
     return li;
   });
 
-const buildPosts = (wathedState) => wathedState.posts
+const buildPosts = (wathedState, i18nextInstance) => wathedState.posts
   .map((post) => {
     const visited = wathedState.uiState.visitedPostsId.has(post.id);
 
@@ -54,7 +52,7 @@ const buildPosts = (wathedState) => wathedState.posts
     return li;
   });
 
-const renderData = (wathedState, container, title) => {
+const renderData = (wathedState, container, title, i18nextInstance) => {
   container.innerHTML = '';
   const ul = document.createElement('ul');
   ul.classList = 'list-group border-0 rounded-0';
@@ -71,13 +69,15 @@ const renderData = (wathedState, container, title) => {
 
   cardBody.append(cardTitle);
 
-  const data = title === 'feeds' ? buildFeed(wathedState.feeds) : buildPosts(wathedState);
+  const data = title === 'feeds'
+    ? buildFeed(wathedState.feeds, i18nextInstance)
+    : buildPosts(wathedState, i18nextInstance);
   ul.append(...data);
   card.append(cardBody, ul);
   container.append(card);
 };
 
-const renderMessage = (state, container) => {
+const renderMessage = (state, container, i18nextInstance) => {
   if (state.formState === 'valid') {
     container.classList.remove('text-danger');
     container.classList.add('text-success');
@@ -105,9 +105,35 @@ const renderInput = (state, input, btn) => {
   }
 };
 
-export {
-  renderInput,
-  renderMessage,
-  renderData,
-  rendermodal,
+export default (path, domElements, wathedState, i18nextInstance) => {
+  switch (path) {
+    case 'formState':
+      renderInput(wathedState, domElements.input, domElements.submitButton);
+      break;
+
+    case 'message':
+      renderMessage(wathedState, domElements.messageContainer, i18nextInstance);
+      break;
+
+    case 'feeds':
+      renderData(wathedState, domElements.feedContainer, 'feeds', i18nextInstance);
+      break;
+
+    case 'posts':
+    case 'uiState.visitedPostsId':
+      renderData(wathedState, domElements.postsContainer, 'posts', i18nextInstance);
+      break;
+
+    case 'uiState.modalPostId':
+      rendermodal(
+        wathedState,
+        domElements.modalBody,
+        domElements.modalTitle,
+        domElements.modallink,
+      );
+      break;
+
+    default:
+      throw new Error(`Unknown path: ${path}`);
+  }
 };

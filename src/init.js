@@ -2,24 +2,14 @@ import * as yup from 'yup';
 import onChange from 'on-change';
 import axios from 'axios';
 import { uniqueId } from 'lodash';
+import i18next from 'i18next';
 import parseHtml from './parser.js';
-import {
-  renderInput, renderMessage, renderData, rendermodal,
-} from './renders.js';
+import render from './renders.js';
+import resouces from './locales/index.js';
 
 const routes = {
   pathWithProxy: (url) => `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`,
 };
-
-yup.setLocale({
-  mixed: {
-    notOneOf: 'message.already_downloaded',
-    required: 'message.empty',
-  },
-  string: {
-    url: 'message.invalid_url',
-  },
-});
 
 const validate = (state, inputVal) => {
   const schema = yup.string().required().url().notOneOf(state.usedRss);
@@ -58,17 +48,32 @@ const updateFeeds = (wathedState) => {
   Promise.all(promises).then(() => setTimeout(updateFeeds, 5000, wathedState));
 };
 
-const form = document.querySelector('form');
-const input = form.elements.url;
-const submitButton = document.querySelector('[type="submit"]');
-const messageContainer = document.querySelector('.feedback');
-const feedContainer = document.querySelector('.feeds');
-const postsContainer = document.querySelector('.posts');
-const modalTitle = document.querySelector('.modal-title');
-const modalBody = document.querySelector('.modal-body');
-const modallink = document.querySelector('.modal-footer > a');
-
 export default () => {
+  yup.setLocale({
+    mixed: {
+      notOneOf: 'message.already_downloaded',
+      required: 'message.empty',
+    },
+    string: {
+      url: 'message.invalid_url',
+    },
+  });
+
+  const domElements = {
+    form: document.querySelector('form'),
+    input: document.querySelector('#url-input'),
+    submitButton: document.querySelector('[type="submit"]'),
+    messageContainer: document.querySelector('.feedback'),
+    feedContainer: document.querySelector('.feeds'),
+    postsContainer: document.querySelector('.posts'),
+    modalTitle: document.querySelector('.modal-title'),
+    modalBody: document.querySelector('.modal-body'),
+    modallink: document.querySelector('.modal-footer > a'),
+  };
+
+  const i18nextInstance = i18next.createInstance();
+  i18nextInstance.init(resouces);
+
   const state = {
     formState: 'filling',
     message: '',
@@ -83,38 +88,14 @@ export default () => {
   };
 
   const wathedState = onChange(state, (path) => {
-    switch (path) {
-      case 'formState':
-        renderInput(state, input, submitButton);
-        break;
-
-      case 'message':
-        renderMessage(state, messageContainer);
-        break;
-
-      case 'feeds':
-        renderData(state, feedContainer, 'feeds');
-        break;
-
-      case 'posts':
-      case 'uiState.visitedPostsId':
-        renderData(wathedState, postsContainer, 'posts');
-        break;
-
-      case 'startChecking':
-        setTimeout(updateFeeds, 5000, wathedState);
-        break;
-
-      case 'uiState.modalPostId':
-        rendermodal(wathedState, modalBody, modalTitle, modallink);
-        break;
-
-      default:
-        throw new Error(`Unknown path: ${path}`);
+    if (path === 'startChecking') {
+      setTimeout(updateFeeds, 5000, wathedState);
+    } else {
+      render(path, domElements, wathedState, i18nextInstance);
     }
   });
 
-  postsContainer.addEventListener('click', (e) => {
+  domElements.postsContainer.addEventListener('click', (e) => {
     const { id } = e.target.dataset;
     if (e.target.tagName === 'A') {
       wathedState.uiState.visitedPostsId.add(id);
@@ -125,18 +106,18 @@ export default () => {
     }
   });
 
-  form.addEventListener('submit', (e) => {
+  domElements.form.addEventListener('submit', (e) => {
     e.preventDefault();
     wathedState.formState = 'loading';
-    validate(state, input.value)
+    validate(state, domElements.input.value)
       .then((res) => {
         axios.get(routes.pathWithProxy(res))
           .then((response) => {
-            state.usedRss.push(input.value);
+            state.usedRss.push(domElements.input.value);
             try {
               const htmlData = parseHtml(response.data.contents);
               const { feed, posts } = setIdToFeedData(htmlData);
-              feed.url = input.value;
+              feed.url = domElements.input.value;
               wathedState.feeds.unshift(feed);
               wathedState.posts.unshift(...posts);
               wathedState.formState = 'valid';
